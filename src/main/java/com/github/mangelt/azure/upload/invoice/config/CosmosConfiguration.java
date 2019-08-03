@@ -36,7 +36,7 @@ public class CosmosConfiguration{
         		.build();
     }
 
-    @Bean
+    @Bean("containerLink")
     protected String containerLink() {
     	return "dbs/" + databaseName + "/colls/" + containerName;
     }

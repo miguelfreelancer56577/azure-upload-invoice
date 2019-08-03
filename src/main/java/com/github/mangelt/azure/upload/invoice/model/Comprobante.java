@@ -17,6 +17,11 @@ import javax.xml.bind.annotation.XmlSchemaType;
 import javax.xml.bind.annotation.XmlType;
 import javax.xml.datatype.XMLGregorianCalendar;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import lombok.Getter;
+import lombok.Setter;
+
 
 /**
  * <p>Clase Java para anonymous complex type.
@@ -68,8 +73,13 @@ import javax.xml.datatype.XMLGregorianCalendar;
     "complemento"
 })
 @XmlRootElement(name = "Comprobante")
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class Comprobante {
 
+	@Getter
+	@Setter
+	@XmlElement(name = "id", required = false)
+	protected String id;
     @XmlElement(name = "Emisor", required = true)
     protected Emisor emisor;
     @XmlElement(name = "Receptor", required = true)

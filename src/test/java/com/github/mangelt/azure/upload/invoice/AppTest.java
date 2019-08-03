@@ -1,4 +1,4 @@
-package com.github.miguelfreelancer56577.azure_spring_boot_starter;
+package com.github.mangelt.azure.upload.invoice;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
