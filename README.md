@@ -1,2 +1,2 @@
 # azure-upload-invoice
-How to use upload and xml to cosmos db
+How to upload an xml to cosmos db
