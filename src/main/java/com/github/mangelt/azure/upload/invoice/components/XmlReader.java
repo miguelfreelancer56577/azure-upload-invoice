@@ -10,7 +10,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 import com.github.mangelt.azure.upload.invoice.exception.XmlReaderException;
-import com.github.mangelt.azure.upload.invoice.model.Comprobante;
+import com.github.mangelt.sat.services.model.Comprobante;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -30,7 +30,7 @@ public class XmlReader {
 		
 		try {
 			invoiceCleaner.cleanup(invoiceFile);
-			JAXBContext jc = JAXBContext.newInstance( "com.github.mangelt.azure.upload.invoice.model" );
+			JAXBContext jc = JAXBContext.newInstance( "com.github.mangelt.sat.services.model" );
 			Unmarshaller u = jc.createUnmarshaller();		
 			comprobante = (Comprobante)u.unmarshal(invoiceFile);
 			return comprobante;

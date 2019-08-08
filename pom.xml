@@ -54,5 +54,10 @@
             <artifactId>azure-cosmos</artifactId>
             <version>3.0.0</version>
         </dependency>
+        <dependency>
+			<groupId>com.github.mangelt</groupId>
+			<artifactId>sat-services-spring-boot-starter</artifactId>
+			<version>[0.0,)</version>
+		</dependency>
   </dependencies>
 </project>

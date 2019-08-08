@@ -22,7 +22,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.azure.data.cosmos.internal.Document;
 import com.github.mangelt.azure.upload.invoice.components.XmlReader;
 import com.github.mangelt.azure.upload.invoice.exception.XmlReaderException;
-import com.github.mangelt.azure.upload.invoice.model.Comprobante;
+import com.github.mangelt.sat.services.model.Comprobante;
 
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
