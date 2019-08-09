@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import lombok.extern.slf4j.Slf4j;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,13 +21,15 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import com.azure.data.cosmos.internal.Document;
 import com.github.mangelt.azure.upload.invoice.components.XmlReader;
 import com.github.mangelt.azure.upload.invoice.exception.XmlReaderException;
+import com.github.mangelt.azure.upload.invoice.util.XmlWrapperFile;
 import com.github.mangelt.sat.services.model.Comprobante;
-
-import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Mono;
+import com.github.mangelt.sat.services.util.FileUtil;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -44,18 +48,24 @@ public class CosmosRepositoryTest {
 	@Value("classpath:files/")
 	String recourceDir;
 	
+	@Value("classpath:zip_files/")
+	String zipFiles;
+	
 	@Autowired
 	ResourceLoader resourceLoader;
+	
+	@Autowired
+	FileUtil fileUtil;
 	
 	@Before
 	public void setup() {
 		if(cache.isEmpty()) {
 			List<File> files = new ArrayList<File>();
-			cache.put("files", files);
+			cache.put("zipFiles", files);
 			
 			try
 			{
-				Files.list(Paths.get(resourceLoader.getResource(this.recourceDir).getFile().getPath()))
+				Files.list(Paths.get(resourceLoader.getResource(this.zipFiles).getFile().getPath()))
 				.forEach(path -> files.add(path.toFile()));
 			}
 			catch (Exception e)
@@ -68,27 +78,59 @@ public class CosmosRepositoryTest {
 	@Test
 	public void createComp() {
 		
-		List<File> files = (List<File>) cache.get("files");
+		List<File> files = (List<File>)cache.get("zipFiles");
+		File compressFile = files.get(0);
 		
-		files.forEach(file->{
+		Flux<File> xmlFiles = fileUtil.streamFrom(compressFile).log();
+		
+		Flux<Document> docs = xmlFiles.flatMap(xmlFile->{
 			
-			Comprobante comp;
+			XmlWrapperFile xmlWrapperFile = new XmlWrapperFile(false, xmlFile, null);
 			
 			try {
-				comp = xmlReader.createComprobante(file);
-				comp.setId(UUID.randomUUID().toString());
 				
-				Document doc = repo.save(comp)
-						.flatMap(res->Mono.just(res.getResource()))
-						.blockFirst();
-						
-				log.info(doc.toJson());
+				Comprobante comprobante = xmlReader.createComprobante(xmlFile);
+				comprobante.setId(UUID.randomUUID().toString());
+				xmlWrapperFile.setComprobante(comprobante);
+				xmlWrapperFile.setProcessed(true);
 				
 			} catch (XmlReaderException e) {
-				log.error(e.getMessage());
+				
+				log.error("There was an error to get a Comprobante from the File: " + xmlFile.getName());
+				log.error("ERROR CLASS: {} ERROR CAUSE: {}", e.getClass() , e.getCause() );
+				
 			}
-
+			
+			return Mono.just(xmlWrapperFile);
+			
+		})
+		.filter(xmlWrapperFile->xmlWrapperFile.processed)
+		.flatMap(xmlWrapperFile->Mono.just(xmlWrapperFile.getComprobante()))
+		.flatMap(comprobante->repo.save(comprobante).flatMap(response->Mono.just(response.getResource())));
+		
+		docs.subscribe(doc->{
+			log.info("Comprobante inserted in comos db with id: {}" , doc.get("id"));
 		});
+		
+//		files.forEach(file->{
+//			
+//			Comprobante comp;
+//			
+//			try {
+//				comp = xmlReader.createComprobante(file);
+//				comp.setId(UUID.randomUUID().toString());
+//				
+//				Document doc = repo.save(comp)
+//						.flatMap(res->Mono.just(res.getResource()))
+//						.blockFirst();
+//						
+//				log.info(doc.toJson());
+//				
+//			} catch (XmlReaderException e) {
+//				log.error(e.getMessage());
+//			}
+//
+//		});
 			
 	}
 	
