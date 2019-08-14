@@ -24,12 +24,12 @@ import org.springframework.test.context.junit4.SpringRunner;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import com.azure.data.cosmos.internal.Document;
 import com.github.mangelt.azure.upload.invoice.components.XmlReader;
 import com.github.mangelt.azure.upload.invoice.exception.XmlReaderException;
 import com.github.mangelt.azure.upload.invoice.util.XmlWrapperFile;
 import com.github.mangelt.sat.services.model.Comprobante;
 import com.github.mangelt.sat.services.util.FileUtil;
+import com.microsoft.azure.cosmosdb.Document;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -112,26 +112,6 @@ public class CosmosRepositoryTest {
 			log.info("Comprobante inserted in comos db with id: {}" , doc.get("id"));
 		});
 		
-//		files.forEach(file->{
-//			
-//			Comprobante comp;
-//			
-//			try {
-//				comp = xmlReader.createComprobante(file);
-//				comp.setId(UUID.randomUUID().toString());
-//				
-//				Document doc = repo.save(comp)
-//						.flatMap(res->Mono.just(res.getResource()))
-//						.blockFirst();
-//						
-//				log.info(doc.toJson());
-//				
-//			} catch (XmlReaderException e) {
-//				log.error(e.getMessage());
-//			}
-//
-//		});
-			
 	}
 	
 }

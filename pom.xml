@@ -59,5 +59,20 @@
 			<artifactId>sat-services-spring-boot-starter</artifactId>
 			<version>[0.0,)</version>
 		</dependency>
+		<dependency>
+			<groupId>io.projectreactor.addons</groupId>
+			<artifactId>reactor-adapter</artifactId>
+			<version>3.2.3.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>io.projectreactor</groupId>
+			<artifactId>reactor-core</artifactId>
+			<version>3.2.8.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>com.github.akarnokd</groupId>
+			<artifactId>rxjava2-interop</artifactId>
+			<version>0.13.7</version>
+		</dependency>
   </dependencies>
 </project>

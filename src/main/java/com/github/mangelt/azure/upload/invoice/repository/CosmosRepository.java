@@ -1,16 +1,19 @@
 package com.github.mangelt.azure.upload.invoice.repository;
 
+import hu.akarnokd.rxjava.interop.RxJavaInterop;
+import io.reactivex.BackpressureStrategy;
+import io.reactivex.Observable;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
-import com.azure.data.cosmos.internal.AsyncDocumentClient;
-import com.azure.data.cosmos.internal.Document;
-import com.azure.data.cosmos.internal.RequestOptions;
-import com.azure.data.cosmos.internal.ResourceResponse;
-
+import reactor.adapter.rxjava.RxJava2Adapter;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+
+import com.microsoft.azure.cosmosdb.Document;
+import com.microsoft.azure.cosmosdb.ResourceResponse;
+import com.microsoft.azure.cosmosdb.rx.AsyncDocumentClient;
 
 @Repository
 public abstract class CosmosRepository <T,I>{
@@ -24,7 +27,9 @@ public abstract class CosmosRepository <T,I>{
 	
 	
 	public Flux<ResourceResponse<Document>> save(T document) {
-		return client.createDocument(containerLink, document, null, true);
+		rx.Observable<ResourceResponse<Document>>  oldObs = client.createDocument(containerLink, document, null, true);
+		io.reactivex.Observable<ResourceResponse<Document>> newObs = RxJavaInterop.toV2Observable(oldObs);
+		return RxJava2Adapter.observableToFlux(newObs, io.reactivex.BackpressureStrategy.BUFFER);
     }
 
 }
