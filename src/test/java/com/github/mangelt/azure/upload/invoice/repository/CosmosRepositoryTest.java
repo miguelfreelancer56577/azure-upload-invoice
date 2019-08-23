@@ -83,14 +83,14 @@ public class CosmosRepositoryTest {
 		
 		Flux<File> xmlFiles = fileUtil.streamFrom(compressFile).log();
 		
-		Flux<Document> docs = xmlFiles.flatMap(xmlFile->{
+		Flux<Comprobante> comprobantes = xmlFiles.flatMap(xmlFile->{
 			
 			XmlWrapperFile xmlWrapperFile = new XmlWrapperFile(false, xmlFile, null);
 			
 			try {
 				
 				Comprobante comprobante = xmlReader.createComprobante(xmlFile);
-				comprobante.setId(UUID.randomUUID().toString());
+				comprobante.setId(comprobante.getComplemento().getTimbreFiscalDigital().getUUID());
 				xmlWrapperFile.setComprobante(comprobante);
 				xmlWrapperFile.setProcessed(true);
 				
@@ -106,10 +106,12 @@ public class CosmosRepositoryTest {
 		})
 		.filter(xmlWrapperFile->xmlWrapperFile.processed)
 		.flatMap(xmlWrapperFile->Mono.just(xmlWrapperFile.getComprobante()))
-		.flatMap(comprobante->repo.save(comprobante).flatMap(response->Mono.just(response.getResource())));
+		.flatMap(comprobante->repo.getById(comprobante.getId())
+								.switchIfEmpty(repo.save(comprobante, true))
+								.flatMap(oldComp->repo.update(comprobante, true)));
 		
-		docs.subscribe(doc->{
-			log.info("Comprobante inserted in comos db with id: {}" , doc.get("id"));
+		comprobantes.subscribe(com->{
+			log.info("Comprobante inserted/updated in comos db with id: {}" , com.getId());
 		});
 		
 	}
