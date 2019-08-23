@@ -10,7 +10,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 
 import com.github.mangelt.azure.upload.invoice.handler.InvoiceHandler;
 
-//@Configuration
+@Configuration
 public class InvoiceRouter {
 
 	public static String API = "/invoice-management";
@@ -19,7 +19,7 @@ public class InvoiceRouter {
 	public RouterFunction<ServerResponse> blobItem(InvoiceHandler invoiceHandler)
 	{
 		return RouterFunctions
-				.route(RequestPredicates.POST(API.concat("/upload/{filename}")).and(RequestPredicates.accept(MediaType.MULTIPART_FORM_DATA)),
+				.route(RequestPredicates.POST(API.concat("/upload")).and(RequestPredicates.accept(MediaType.MULTIPART_FORM_DATA)),
 						invoiceHandler::uploadCosmos);
 	}
 	
