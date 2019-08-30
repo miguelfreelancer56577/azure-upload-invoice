@@ -2,9 +2,6 @@ package com.github.mangelt.azure.upload.invoice.handler;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Optional;
-
-import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -13,10 +10,6 @@ import org.springframework.web.reactive.function.BodyExtractors;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.mangelt.azure.upload.invoice.components.XmlReader;
 import com.github.mangelt.azure.upload.invoice.exception.XmlReaderException;
 import com.github.mangelt.azure.upload.invoice.repository.ComprobateRepository;
@@ -26,9 +19,13 @@ import com.github.mangelt.sat.services.model.Comprobante;
 import com.github.mangelt.sat.services.util.BlobException;
 import com.github.mangelt.sat.services.util.BlobUtil;
 import com.github.mangelt.sat.services.util.ErrorUtil;
-import com.github.mangelt.sat.services.util.FileUtil;
 import com.microsoft.azure.storage.StorageException;
 import com.microsoft.azure.storage.blob.CloudBlobContainer;
+
+import ch.qos.logback.core.util.FileUtil;
+import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Slf4j
 @Component
@@ -36,16 +33,16 @@ public class InvoiceHandler {
 
 	@Autowired
 	protected CloudBlobContainer blobContainer;
-	
+
 	@Autowired
 	FileUtil fileUtil;
-	
+
 	@Autowired
 	ErrorUtil errorUtil;
-	
+
 	@Autowired
 	XmlReader xmlReader;
-	
+
 	@Autowired
 	ComprobateRepository repo;
 
@@ -67,64 +64,64 @@ public class InvoiceHandler {
 				})
 				.flatMap(compressFile ->
 				{
-					
+
 					if (bte.getStatus() != null)
 					{
-						log.error(errorUtil.errorMessage(bte));
+						log.error(this.errorUtil.errorMessage(bte));
 						return BlobUtil.onErrorResponse(bte);
 					}
 
-					Flux<File> xmlFiles = fileUtil.streamFrom(compressFile).log();
-					
+					Flux<File> xmlFiles = this.fileUtil.streamFrom(compressFile).log();
+
 					Flux<Comprobante> comprobantes = xmlFiles.flatMap(xmlFile->{
-						
+
 						XmlWrapperFile xmlWrapperFile = new XmlWrapperFile(false, xmlFile, null);
-						
+
 						try {
-							
-							Comprobante comprobante = xmlReader.createComprobante(xmlFile);
+
+							Comprobante comprobante = this.xmlReader.createComprobante(xmlFile);
 							comprobante.setId(comprobante.getComplemento().getTimbreFiscalDigital().getUUID());
 							xmlWrapperFile.setComprobante(comprobante);
 							xmlWrapperFile.setProcessed(true);
-							
+
 							log.info("Transformed File: {}", comprobante.toString());
-							
+
 						} catch (XmlReaderException e) {
-							
+
 							try {
-								
+
 								StorageResource sr = new StorageResource(this.blobContainer);
-								
-								sr.setCloudBlockBlob(compressFile.getName());
-								
-								log.error("Error while trying to transform {} to comprobante, uploading file to blob container", compressFile.getName());
+
+								sr.setCloudBlockBlob(xmlFile.getName());
+
+								log.error("Error while trying to transform {} to comprobante, uploading file to blob container", xmlFile.getName());
 								sr.uploadFromFile(xmlFile);
-								
+
 							} catch (StorageException | IOException bw) {
-								log.error("There was an error to upload blob file with error: {}", errorUtil.errorMessage(bw));
+								log.error("There was an error to upload blob file with error: {}", this.errorUtil.errorMessage(bw));
 							}
 							log.error("There was an error to get a Comprobante from the File: " + xmlFile.getName());
-							log.error("ERROR CLASS: {} ERROR CAUSE: {}", e.getClass() , e.getCause() );
+							log.error("ERROR CLASS: {} ERROR CAUSE: {}", e.getClass() , e.getMessage() );
 						}
-						
+
 						return Mono.just(xmlWrapperFile);
-						
+
 					})
-					.filter(xmlWrapperFile->xmlWrapperFile.processed)
-					.flatMap(xmlWrapperFile->Mono.just(xmlWrapperFile.getComprobante()))
-					.flatMap(comprobante->repo.getById(comprobante.getId())
-							.switchIfEmpty(repo.save(comprobante, true))
-							.flatMap(oldComp->repo.update(comprobante, true)));
-					
+							.filter(xmlWrapperFile->xmlWrapperFile.processed)
+							.flatMap(xmlWrapperFile->Mono.just(xmlWrapperFile.getComprobante()))
+							.flatMap(comprobante->this.repo.getById(comprobante.getId())
+									.switchIfEmpty(this.repo.save(comprobante, true))
+									.flatMap(oldComp->this.repo.update(comprobante, true)));
+
 					return comprobantes.last()
-								.flatMap(comprobante->ServerResponse.ok()
-														.build())
-								.onErrorResume(error->{
-									log.error(errorUtil.errorMessage(error));
-									return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Mono.just(errorUtil.errorMessage(error)), String.class);
-								});
+							.flatMap(comprobante->ServerResponse.ok()
+									.build())
+							.onErrorResume(error->{
+								log.error(this.errorUtil.errorMessage(error));
+								return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Mono.just(this.errorUtil.errorMessage(error)), String.class);
+							});
 
 				});
 	}
-	
+
 }
